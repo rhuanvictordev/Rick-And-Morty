@@ -34,7 +34,24 @@ final Map<String, String> speciesTranslations = {
 
 final Map<String, String> originTranslations = {
   'unknown': 'Desconhecida',
+  'Earth (C-137)': 'Planeta Terra',
+  'Earth (Replacement Dimension)': 'Terra (Nova Dimensão)',
 };
+
+final Map<String, String> episodesTranslations = {
+  'Male': '125',
+  'Female': '86',
+};
+
+final Map<String, String> viewTranslations = {
+  'Todos': 'Todos',
+  'Human': 'Terra C-137',
+  'Alien': 'Planeta Alielígena',
+  'Humanoid': 'Laboratório',
+};
+
+
+
 
 
 // Widget principal da aplicação, que define o tema e a tela inicial
@@ -80,19 +97,38 @@ class _CharacterPageState extends State<CharacterPage> {
 
   // Função que faz a requisição para a API e carrega os personagens
   Future<void> fetchCharacters() async {
-    final url = Uri.parse('https://rickandmortyapi.com/api/character');
-    final response = await http.get(url);
+    final String baseUrl = 'https://rickandmortyapi.com/api/character';
+    List<dynamic> allCharacters = [];
+    String? nextPage = baseUrl;
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body); // Decodifica o JSON da resposta
+    // Loop para percorrer todas as paginas da Api
+    try {
+      while (nextPage != null) {
+        final url = Uri.parse(nextPage);
+        final response = await http.get(url);
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+
+          // Adiciona os personagens da página atual à lista
+          allCharacters.addAll(data['results']);
+
+          // Atualiza para a próxima página
+          nextPage = data['info']['next'];
+        } else {
+          throw Exception('Erro ao consultar API: ${response.statusCode}');
+        }
+      }
+
       setState(() {
-        _allCharacters = data['results']; // Salva todos os personagens
+        _allCharacters = allCharacters; // Atualiza a lista com todos os personagens
         _characters = _allCharacters; // Exibe todos os personagens inicialmente
       });
-    } else {
-      throw Exception('Erro ao consultar API'); // Caso a requisição falhe
+    } catch (e) {
+      throw Exception('Erro ao buscar personagens: $e');
     }
   }
+
 
   // Função que aplica os filtros na lista de personagens
   void _applyFilters() {
@@ -304,14 +340,13 @@ class _CharacterPageState extends State<CharacterPage> {
             onPressed: _showFilterDialog, // Exibe o diálogo de filtros
           ),
           Expanded(
-            child: _characters.isEmpty
-                ? Center(child: CircularProgressIndicator())
+            child: _characters.isEmpty ? Center(child: CircularProgressIndicator())
                 : GridView.builder(
               itemCount: _characters.length, // Número de personagens a exibir
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2, // Define 2 colunas para o grid
                 crossAxisSpacing: 0,
-                mainAxisSpacing: 6,
+                mainAxisSpacing: 10,
                 childAspectRatio: 1 / 1, // Proporção dos cards
               ),
               itemBuilder: (context, index) {
@@ -380,14 +415,17 @@ class CharacterDetailPage extends StatelessWidget {
               'assets/images/appBarImage.png',
               fit: BoxFit.cover,
               width: 411,
-              height: 50,
+              height: 86,
             ),
-            Center(
-              child: Image.network(
-                character['image'],
-                width: 380,
-                height: 300,
-                fit: BoxFit.fill,
+            Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: Center(
+                child: Image.network(
+                  character['image'],
+                  width: 460,
+                  height: 350,
+                  fit: BoxFit.fill,
+                ),
               ),
             ),
             SizedBox(height: 20),
@@ -395,7 +433,7 @@ class CharacterDetailPage extends StatelessWidget {
               'Nome: ${character['name']}',
               style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 6),
@@ -403,7 +441,7 @@ class CharacterDetailPage extends StatelessWidget {
               'Status: ${statusTranslations[character['status']] ?? character['status']}',
               style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 6),
@@ -411,7 +449,7 @@ class CharacterDetailPage extends StatelessWidget {
               'Espécie: ${speciesTranslations[character['species']] ?? character['species']}',
               style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 6),
@@ -419,7 +457,7 @@ class CharacterDetailPage extends StatelessWidget {
               'Gênero: ${genderTranslations[character['gender']] ?? character['gender']}',
               style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 6),
@@ -427,7 +465,24 @@ class CharacterDetailPage extends StatelessWidget {
               'Origem: ${originTranslations[character['origin']['name']] ?? character['origin']['name']}',
               style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 6),
+            Text(
+              'Episódios: ${episodesTranslations[character['gender']] ?? character['gender']}',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
+            ),
+
+            SizedBox(height: 6),
+            Text(
+              'Visto por último: ${viewTranslations[character['species']] ?? character['species']}',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold),
             ),
           ],
